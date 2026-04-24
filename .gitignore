@@ -1,0 +1,12 @@
+__pycache__/
+.vscode/
+.slangtorch_cache
+*.lock
+build/
+build1*/
+dist/
+*.egg-info
+*.py[cod]
+*.so
+
+vksplat/third_party/glm

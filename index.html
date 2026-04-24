@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VkSplat: High-Performance 3DGS Training in Vulkan Compute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --bg-card: #13161d;
+      --bg-card2: #181b24;
+      --border: #2a2e3d;
+      --accent: #ec3434;
+      --accent2: #e97243;
+      --accent3: #d39b34;
+      --text: #e8eaf2;
+      --text-muted: #8892a4;
+      --text-dim: #565e72;
+      --red: #f87171;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --font-sans: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,15,20,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--accent); }
+    nav .brand {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-right: auto;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      padding: 6rem 2rem 5rem;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(108,143,255,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 20% 100%, rgba(167,139,250,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 80% 100%, rgba(52,211,153,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .venue-badge {
+      display: inline-block;
+      background: rgba(255, 108, 108, 0.12);
+      border: 1px solid rgba(255, 108, 108, 0.3);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      padding: 0.3rem 0.9rem;
+      border-radius: 4px;
+      margin-bottom: 1.8rem;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 400;
+      line-height: 1.15;
+      max-width: 820px;
+      margin: 0 auto 0.6rem;
+      letter-spacing: -0.01em;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      font-weight: 300;
+      max-width: 700px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* Authors */
+    .authors {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem 1.6rem;
+      margin-bottom: 0.6rem;
+    }
+    .author {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .affil {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.3rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.18s;
+      border: 1px solid transparent;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0d0f14;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: #ffa18a; border-color: #ff8a8a; }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,143,255,0.07); }
+    .btn svg { width: 16px; height: 16px; }
+
+    /* ─── TEASER ─── */
+    .teaser {
+      max-width: 1100px;
+      margin: 2rem auto 0;
+      padding: 0 2rem;
+    }
+    .teaser-img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .teaser-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .img-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      padding: 3rem;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+    .img-placeholder svg { opacity: 0.3; }
+    .img-caption {
+      margin-top: 0.8rem;
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ─── STATS BAR ─── */
+    .stats-bar {
+      max-width: 1000px;
+      margin: 3.5rem auto;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .stat {
+      background: var(--bg-card);
+      padding: 1.8rem 1.5rem;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: var(--font-serif);
+      font-size: 2.8rem;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .stat-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .stat-sub {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 0.2rem;
+    }
+
+    /* ─── SECTIONS ─── */
+    section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    section.wide { max-width: 1100px; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin-bottom: 0.7rem;
+    }
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 400;
+      margin-bottom: 1.4rem;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-family: var(--font-sans);
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      color: var(--text);
+    }
+    p, li {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+    p strong, li strong { color: var(--text); font-weight: 600; }
+
+    .divider {
+      max-width: 1100px;
+      margin: 0 auto;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 700px) {
+      .two-column { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ─── ABSTRACT ─── */
+    .abstract-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem 2.5rem;
+      font-size: 1.2rem;
+      line-height: 1.8;
+      color: var(--text-muted);
+    }
+    .abstract-box strong { color: var(--text); }
+
+    /* ─── VIDEO ─── */
+    .video-wrapper {
+      aspect-ratio: 1536/822;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-wrapper iframe {
+      width: 100%; height: 100%; border: none;
+    }
+
+    /* ─── CONTRIBUTIONS ─── */
+    .contrib-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+      margin-top: 1.5rem;
+    }
+    .contrib-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .contrib-card:hover {
+      border-color: rgba(108,143,255,0.4);
+      transform: translateY(-2px);
+    }
+    .contrib-num {
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+      color: var(--accent);
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.08em;
+    }
+    .contrib-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .contrib-card p { font-size: 1.1rem; margin: 0; }
+
+    /* ─── PIPELINE ─── */
+    .pipeline-figure {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+    .pipeline-figure img { width: 100%; display: block; }
+
+    /* ─── RESULTS TABLE ─── */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.1rem;
+      font-family: var(--font-mono);
+    }
+    thead tr {
+      border-bottom: 2px solid var(--border);
+    }
+    thead th {
+      padding: 0.6rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    thead th:first-child { text-align: left; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td {
+      padding: 0.65rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    tbody td:first-child { text-align: left; color: var(--text); font-weight: 500; }
+    .highlight-row td { color: var(--accent); }
+    .highlight-row td:first-child { color: var(--accent); }
+    .badge-ours {
+      display: inline-block;
+      background: rgba(108,143,255,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(108,143,255,0.3);
+      font-size: 0.85rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+      letter-spacing: 0.04em;
+    }
+    .speed-col { color: var(--accent3) !important; font-weight: 600; }
+
+    .table-caption {
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      margin-top: 0.7rem;
+      font-style: italic;
+    }
+
+    /* ─── COMPARISON GRID ─── */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    @media (min-width: 700px) {
+      .comparison-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .cmp-item { text-align: center; }
+    .cmp-img {
+      width: 100%;
+      aspect-ratio: 1.5;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.4rem;
+    }
+    .cmp-img img { width: 100%; height: 100%; object-fit: cover; }
+    .cmp-label {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .cmp-label.ours { color: var(--accent); }
+
+    /* ─── TIMING CHART ─── */
+    .timing-bars { margin: 1.5rem 0; }
+    .timing-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 1fr;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.6rem;
+    }
+    .timing-name { font-size: 1rem; color: var(--text-muted); font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+    .bar-wrap { height: 22px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.9rem; font-family: var(--font-mono); white-space: nowrap; transition: width 0.6s ease; }
+    .bar-gsplat { background: rgba(113, 133, 248, 0.3); color: var(--text); }
+    .bar-vksplat { background: rgba(255, 66, 66, 0.3); color: var(--text); }
+
+    /* ─── AMD SECTION ─── */
+    .vendor-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
+    .vendor-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+    }
+    .vendor-name {
+      font-family: var(--font-mono);
+      font-size: 1.0rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .vendor-num { font-family: var(--font-serif); font-size: 2.2rem; color: var(--text); line-height: 1; margin-bottom: 0.2rem; }
+    .vendor-unit { font-size: 1.0rem; color: var(--text-muted); }
+
+    /* ─── BibTeX ─── */
+    .bibtex-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 1.0rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+      overflow-x: auto;
+      position: relative;
+    }
+    .bibtex-box .key { color: var(--accent2); }
+    .bibtex-box .val { color: var(--accent3); }
+    .bibtex-box .type { color: var(--accent); }
+    .copy-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-family: var(--font-sans);
+      padding: 0.3rem 0.7rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+    footer a { color: var(--text-muted); text-decoration: underline; }
+    footer a:hover { color: var(--accent); }
+
+    /* ─── UTILS ─── */
+    .tag {
+      display: inline-block;
+      background: rgba(211, 115, 52, 0.1);
+      border: 1px solid rgba(211, 52, 52, 0.25);
+      color: var(--accent3);
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+      padding: 0.18rem 0.6rem;
+      border-radius: 4px;
+      margin-right: 0.4rem;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 600px) {
+      .stats-bar { grid-template-columns: 1fr; }
+      .vendor-cards { grid-template-columns: 1fr; }
+      .timing-row { grid-template-columns: 100px 1fr 1fr; }
+      nav a:not(.brand) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="brand" href="#">VkSplat</a>
+  <a href="#abstract">Abstract</a>
+  <a href="#method">Method</a>
+  <a href="#results">Results</a>
+  <a href="#bibtex">BibTeX</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="venue-badge">EUROGRAPHICS 2026</div>
+  <h1>VkSplat: <em>High-Performance</em> 3DGS Training in Vulkan Compute</h1>
+  <p class="subtitle">A fully cross-vendor 3D Gaussian Splatting training pipeline delivering &gt;3.3x speed and 33% VRAM reduction over CUDA+PyTorch baselines.</p>
+
+  <div class="authors">
+    <span class="author">Jingxiang Chen</span>
+    <span class="author">Mohamed Ibrahim</span>
+    <span class="author">Yang Liu</span>
+  </div>
+  <p class="affil">Huawei Canada</p>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="https://github.com/harry7557558/vksplat" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      Code
+    </a>
+    <a class="btn btn-outline" href="https://diglib.eg.org/bitstream/handle/10.2312/egs20261024/egs20261024.pdf" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Paper
+    </a>
+    <a class="btn btn-outline" href="https://diglib.eg.org/bitstream/handle/10.2312/egs20261024/short1049_MM_CRC1.pdf" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Supplement
+    </a>
+    <!-- <a class="btn btn-outline" href="#">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      arXiv (coming soon)
+    </a> -->
+  </div>
+
+  <div>
+    <span class="tag">Vulkan Compute</span>
+    <span class="tag">3D Gaussian Splatting</span>
+    <span class="tag">Novel View Synthesis</span>
+    <span class="tag">Cross-Vendor GPU</span>
+    <span class="tag">Real-Time Rendering</span>
+  </div>
+</header>
+
+<!-- TEASER -->
+<div class="teaser">
+  <div class="teaser-img">
+    <img src="assets/teaser.jpg" />
+  </div>
+  <p class="img-caption">VkSplat on Mip-NeRF 360 benchmark on NVIDIA RTX 3090, showing render from first eval view, time, VRAM, quality metrics, and number of Gaussians. VkSplat achieves consistent rendering quality while running &gt;3.3x faster and using 33% less VRAM than CUDA+PyTorch baselines.</p>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num">&gt;3.3x</div>
+    <div class="stat-label">Speedup</div>
+    <div class="stat-sub">vs. GSplat (CUDA+PyTorch)</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">−33%</div>
+    <div class="stat-label">VRAM Usage</div>
+    <div class="stat-sub">Avg. on Mip-NeRF 360</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">3+</div>
+    <div class="stat-label">GPU Vendors</div>
+    <div class="stat-sub">NVIDIA, AMD, &amp; Intel® validated</div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ABSTRACT -->
+<section id="abstract">
+  <div class="section-label">// Abstract</div>
+  <h2>Overview</h2>
+  <div class="abstract-box">
+    We present <strong>VkSplat</strong>, a high-performance, cross-vendor <strong>3D Gaussian Splatting (3DGS) training pipeline implemented fully in Vulkan compute</strong>, addressing the performance and compatibility limitations of existing training pipelines. With various optimizations, we achieve <strong>&gt;3.3x speed</strong> and <strong>33% VRAM reduction</strong> over the CUDA+PyTorch baseline, maintaining rendering quality, and demonstrating compatibility across GPU vendors.
+    <br/><br/>
+    Our key contributions include complete tile culling using a parallelizable scan-line formulation, per-Gaussian and tensor-based rasterization backward passes that eliminate pixel-level atomic contention, and a fully-fused backward projection and Adam optimizer running in a single pass. To the best of our knowledge, this is the <strong>first fully-Vulkan-based 3DGS training pipeline that achieves state-of-the-art performance</strong>.
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- VIDEO -->
+<section id="video">
+  <div class="section-label">// Video</div>
+  <h2>Training Demo</h2>
+  <div class="video-wrapper">
+    <video width="100%" height="100%" controls>
+      <source src="assets/timelapse.mp4" type="video/mp4">
+    </video>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- METHOD -->
+<section id="method" style="padding-bottom:0">
+  <div class="section-label">// Method</div>
+  <h2>Technical Contributions</h2>
+  <p>VkSplat is built on <a href="https://github.com/google/slang-gaussian-rasterization" style="color:var(--accent)">Slang-Gaussian-Rasterization</a> and targets the Vulkan backend, leveraging Slang's multi-backend flexibility. Four key optimizations push performance well beyond the CUDA baseline.</p>
+</section>
+<section class="wide" style="padding-top:0">
+  <div class="contrib-grid">
+    <div class="contrib-card">
+      <div class="contrib-num">01</div>
+      <h3>Complete Tile Culling</h3>
+      <p>A scan-line intersection approach computes exact Gaussian–tile overlaps with closed-form interval arithmetic, eliminating both false-positive intersections that slow down sorting and rasterization in prior work, without introducing false-negative intersections that impact quality.</p>
+    </div>
+    <div class="contrib-card">
+      <div class="contrib-num">02</div>
+      <h3>Adaptive Rasterization Backward</h3>
+      <p>Two rasterization backward kernels (per-Gaussian parallelization and a shared-memory forward+backward formulation) are selected at runtime via Thompson sampling, choosing whichever is faster for the current scene configuration.</p>
+    </div>
+    <div class="contrib-card">
+      <div class="contrib-num">03</div>
+      <h3>Fused Projection Backward &amp; Optimizer</h3>
+      <p>Projection backward and Adam optimizer are merged into a single kernel pass. Log/logit transforms and SH coefficient layout optimizations completely eliminate the excess VRAM footprint present in existing PyTorch-based implementations.</p>
+    </div>
+    <div class="contrib-card">
+      <div class="contrib-num">04</div>
+      <h3>32-bit Tile-Depth Sorting</h3>
+      <p>A depth-remapping function compresses tile-depth keys to 32 bits (14 bits tile ID + 18 bits depth), avoiding the slow Vulkan equivalent of CUDA's 64-bit radix sort while preserving quality at up to 1080p resolution.</p>
+    </div>
+    <div class="contrib-card">
+      <div class="contrib-num">05</div>
+      <h3>Fully-Fused Loss Gradient</h3>
+      <p>A fused kernel computes the gradient of the weighted L₁ + SSIM loss directly, skipping all intermediate reductions and memory-layout conversions. Reference images are stored as 4×UINT8 RGBA, removing the FP32 conversion overhead.</p>
+    </div>
+    <div class="contrib-card">
+      <div class="contrib-num">06</div>
+      <h3>Optimized SH Memory Layout</h3>
+      <p>Degree-3 spherical harmonics (48 FP32 coefficients per Gaussian) are split into 12 × 128-bit values in a column-aligned format matching subgroup size, improving memory coalescing across the projection stages.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE FIGURE -->
+<section class="wide" style="padding-top:0">
+  <div class="pipeline-figure">
+    <!-- <div class="img-placeholder" style="min-height:280px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span><strong>Pipeline Diagram</strong><br/>Suggested: Full VkSplat training pipeline flowchart showing stages: Projection Fwd → Tile Culling → Sorting → Rasterization Fwd → Loss → Rasterization Bwd → Proj Bwd + Adam (fused). Highlight fused stages.</span>
+    </div> -->
+    <img src="assets/pipeline.png" />
+  </div>
+
+  <div class="two-column" style="gap:1.2rem; margin-top:1.2rem">
+    <div class="pipeline-figure">
+      <!-- <div class="img-placeholder" style="min-height:220px">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span><strong>Figure: Scan-line Tile Culling</strong><br/>Suggested: Figure 1 from the paper — 2D Gaussian ellipse with scan-line rows, showing row-boundary intersections and exact tile coverage without false positives.</span>
+      </div> -->
+      <img src="assets/tile-culling.png" />
+      <p class="img-caption">Existing implementations often produce false-positive intersections in tile-Gaussian association, which negatively impacts performance. In our implementation, we compute exact intersections using a scan-line approach, with efficient intersection counting and traversal in fused kernels.</p>
+    </div>
+    <div class="pipeline-figure">
+      <!-- <div class="img-placeholder" style="min-height:220px">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span><strong>Figure: Rasterization Backward Implementations</strong><br/>Suggested: Figure 2 from the paper — side-by-side diagram of Impl. 1 (per-Gaussian parallelism) and Impl. 2 (shared-memory forward+backward), with thread block layout.</span>
+      </div> -->
+      <img src="assets/raster-backward.png" />
+      <p class="img-caption">Backward rasterization is often a performance bottleneck of 3DGS training. We use two implementations with careful consideration to minimize atomic contention and minimizing divergence, and a Thompson sampling scheduler to automatically pick the fastest implementation per dataset and hardware.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="section-label">// Results</div>
+  <h2>Quantitative Results</h2>
+  <p>We evaluate on 7 scenes from the <strong>Mip-NeRF 360</strong> dataset. Each configuration is trained 5 times; results are reported with 90% confidence intervals. VkSplat matches baseline quality while achieving substantial resource savings.</p>
+
+  <h3 style="margin-top:1.8rem; margin-bottom:0.6rem">Quality Metrics (Mip-NeRF 360, mean over 7 scenes)</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>PSNR ↑</th>
+          <th>SSIM ↑</th>
+          <th>LPIPS ↓</th>
+          <th># Gaussians</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GSplat (Default)</td>
+          <td>29.[19–25]</td>
+          <td>0.87[8–9]</td>
+          <td>0.124</td>
+          <td>3.0[6–8] M</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>VkSplat (Default) <span class="badge-ours">Ours</span></td>
+          <td>29.2[0–7]</td>
+          <td>0.87[8–9]</td>
+          <td>0.12[4–5]</td>
+          <td>3.0[2–6] M</td>
+        </tr>
+        <tr>
+          <td>GSplat (MCMC)</td>
+          <td>29.4[3–5]</td>
+          <td>0.881</td>
+          <td>0.1[29–30]</td>
+          <td>1.00 M</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>VkSplat (MCMC) <span class="badge-ours">Ours</span></td>
+          <td>29.[39–45]</td>
+          <td>0.881</td>
+          <td>0.130</td>
+          <td>1.00 M</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:2.2rem; margin-bottom:0.6rem">Resource Usage (NVIDIA RTX 3090)</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Total Time</th>
+          <th>Speedup</th>
+          <th>VRAM (GiB)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GSplat (Default)</td>
+          <td>1384 s</td>
+          <td>—</td>
+          <td>4.56</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>VkSplat (Default) <span class="badge-ours">Ours</span></td>
+          <td>412 s</td>
+          <td class="speed-col">3.35×</td>
+          <td>3.01</td>
+        </tr>
+        <tr>
+          <td>GSplat (MCMC)</td>
+          <td>995 s</td>
+          <td>—</td>
+          <td>1.37</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>VkSplat (MCMC) <span class="badge-ours">Ours</span></td>
+          <td>285 s</td>
+          <td class="speed-col">3.49×</td>
+          <td>0.93</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="table-caption">All timing on NVIDIA RTX 3090, averaged over 7 Mip-NeRF 360 scenes. VkSplat is faster in every single pipeline stage.</p>
+</section>
+
+<!-- TIMING BREAKDOWN -->
+<section class="wide" style="padding-top:0">
+  <h3 style="margin-bottom:1rem">Per-Stage Timing Breakdown</h3>
+  <p style="font-size:1.1rem; margin-bottom:1.2rem">Default densification. Average over 7 scenes, NVIDIA RTX 3090.</p>
+  <div class="timing-bars">
+    <!-- Each row: label, GSplat bar, VkSplat bar -->
+    <div style="display:grid; grid-template-columns:160px 1fr 1fr; gap:0.6rem; margin-bottom:0.3rem">
+      <span></span>
+      <span style="font-size:1rem; color:var(--text-muted); font-family:var(--font-mono); text-align:center">GSplat</span>
+      <span style="font-size:1rem; color:var(--accent); font-family:var(--font-mono); text-align:center">VkSplat</span>
+    </div>
+
+    <div class="timing-row">
+      <div class="timing-name">Projection Fwd</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(94/459*100%)">94 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(19/459*100%)">19 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Tiling/Sorting</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(42/459*100%)">42 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(25/459*100%)">25 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Rasterize Fwd</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(69/459*100%)">69 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(25/459*100%)">25 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Loss</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(103/459*100%)">103 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(32/459*100%)">32 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Rasterize Bwd</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(246/459*100%)">246 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(130/459*100%)">130 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Proj Bwd + Optim</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(459/459*100%)">459 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(131/459*100%)">131 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Densification</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(31/459*100%)">31 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(5/459*100%)">5 s</div></div>
+    </div>
+    <div class="timing-row">
+      <div class="timing-name">Unaccounted</div>
+      <div class="bar-wrap"><div class="bar-fill bar-gsplat" style="width:calc(341/459*100%)">341 s</div></div>
+      <div class="bar-wrap"><div class="bar-fill bar-vksplat" style="width:calc(43/459*100%)">43 s</div></div>
+    </div>
+  </div>
+  <p class="table-caption" style="margin-top:0.8rem">VkSplat outperforms GSplat in every pipeline stage. The large "unaccounted" time in GSplat is mainly SH tensor concatenation backward and small kernel launches managed by PyTorch.</p>
+</section>
+
+<!-- VISUAL COMPARISONS -->
+<section class="wide" style="padding-top:2rem">
+  <h3 style="margin-bottom:0.8rem">Visual Comparison</h3>
+  <p style="font-size:1.1rem; margin-bottom:1.2rem">VkSplat produces rendering quality consistent with the CUDA baseline across Mip-NeRF 360 dataset. It also generalizes to other commonly used benchmark datasets with pinhole and fisheye cameras. First eval image is shown for each dataset.</p>
+  <div class="comparison-grid">
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/garden_gsplat_default.jpg" />
+      </div>
+      <div class="cmp-label">GSplat (garden, default)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/garden_vksplat_default.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (garden, default)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/counter_gsplat_mcmc1M.jpg" />
+      </div>
+      <div class="cmp-label">GSplat (counter, MCMC 1M)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/counter_vksplat_mcmc1M.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (counter, MCMC 1M)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/truck_vksplat_mcmc1M.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (truck, MCMC 1M)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/playroom_vksplat_mcmc1M.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (playroom, MCMC 1M)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/fern_vksplat_mcmc1M.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (LLFF fern, MCMC 1M)</div>
+    </div>
+    <div class="cmp-item">
+      <div class="cmp-img">
+        <img src="assets/nyc_vksplat_mcmc3M.jpg" />
+      </div>
+      <div class="cmp-label ours">VkSplat (Zip-NeRF nyc, MCMC 3M)</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- CROSS-VENDOR -->
+<section id="cross-vendor">
+  <div class="section-label">// Cross-Vendor</div>
+  <h2>GPU Compatibility</h2>
+  <p>A key advantage of building on Vulkan is freedom from the NVIDIA/CUDA ecosystem. VkSplat has been validated on NVIDIA, AMD, and Intel® hardware, producing consistent quality metrics and VRAM usage on both vendors. All Gaussian counts and quality scores are identical between platforms.</p>
+
+  <div class="vendor-cards">
+    <div class="vendor-card">
+      <div class="vendor-name">NVIDIA RTX 3090</div>
+      <div class="vendor-num">575 s</div>
+      <div class="vendor-unit">Bicycle scene, default densification</div>
+    </div>
+    <div class="vendor-card">
+      <div class="vendor-name">AMD Radeon RX 7800 XT</div>
+      <div class="vendor-num">1201 s</div>
+      <div class="vendor-unit">Bicycle scene, default densification</div>
+    </div>
+  </div>
+
+  <p style="margin-top:1rem">The largest performance gap between the two vendors is image-to-device transfer, which is roughly <strong>30× slower on AMD</strong> due to a PCIe throughput difference. Asynchronous data transfer would largely close this gap. Compute-bound stages like rasterization backward are within 2× of each other. We expect hardware-specific tuning could further reduce the gap.</p>
+
+  <!-- <div class="pipeline-figure" style="margin-top:1.5rem">
+    <div class="img-placeholder" style="min-height:200px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span><strong>Cross-Vendor Timing Chart</strong><br/>Suggested: Grouped bar chart comparing per-stage timing on NVIDIA RTX 3090 vs AMD RX 7800 XT, with the PCIe bottleneck clearly visible on the "Copy Image to Device" stage.</span>
+    </div>
+  </div> -->
+</section>
+
+<hr class="divider" />
+
+<!-- LIMITATIONS -->
+<section id="limitations">
+  <div class="section-label">// Discussion</div>
+  <h2>Limitations &amp; Future Work</h2>
+  <p>While VkSplat demonstrates strong performance advantages, the current implementation has several limitations compared to production-grade 3DGS trainers:</p>
+  <ul style="color:var(--text-muted); padding-left:1.3rem; line-height:2">
+    <li><strong>Missing practical features:</strong> Exposure correction, depth/normal supervision, image batching, and multi-GPU training are not yet implemented.</li>
+    <li><strong>Densification strategies:</strong> Only default and MCMC densification are supported; more efficient alternatives like those in Taming 3DGS or LiteGS are not yet integrated.</li>
+    <li><strong>AMD performance gap:</strong> The current PCIe transfer bottleneck on AMD could be mitigated with asynchronous data transfer.</li>
+  </ul>
+  <p style="margin-top:1rem">Future extensions include support for additional Slang backends (Metal, DirectX, WebGPU) and application of VkSplat's optimizations to other Gaussian splatting variants.</p>
+</section>
+
+<hr class="divider" />
+
+<!-- BIBTEX -->
+<section id="bibtex">
+  <div class="section-label">// Citation</div>
+  <h2>BibTeX</h2>
+  <div class="bibtex-box">
+    <button class="copy-btn" onclick="copyBibtex(this)">Copy</button>
+    <pre id="bibtex-content"><span class="type">@inproceedings</span>{chen2026vksplat,
+  <span class="key">booktitle</span> = {<span class="val">Eurographics 2026 - Short Papers</span>},
+  <span class="key">title</span>     = {{<span class="val">VkSplat: High-Performance 3DGS Training in Vulkan Compute</span>}},
+  <span class="key">author</span>    = {<span class="val">Chen, Jingxiang and Ibrahim, Mohamed and Liu, Yang</span>},
+  <span class="key">year</span>      = {<span class="val">2026</span>},
+  <span class="key">publisher</span> = {<span class="val">The Eurographics Association</span>},
+  <span class="key">ISSN</span>      = {<span class="val">2309-5059</span>},
+  <span class="key">ISBN</span>      = {<span class="val">978-3-03868-299-8</span>},
+  <span class="key">DOI</span>       = {<span class="val">10.2312/egs.20261024</span>}<!-- ,
+  <span class="key">url</span>       = {<span class="val">https://github.com/harry7557558/vksplat</span>} -->
+}</pre>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ACKNOWLEDGEMENTS -->
+<section>
+  <div class="section-label">// Acknowledgements</div>
+  <h2>Acknowledgements</h2>
+  <p>We thank the authors of <a href="https://github.com/nerfstudio-project/gsplat" style="color:var(--accent)">GSplat</a> and <a href="https://github.com/google/slang-gaussian-rasterization" style="color:var(--accent)">Slang-Gaussian-Rasterization</a> for open-sourcing their codebases under permissive Apache-2.0 license, which served as the foundation for our work. We also thank the original 3DGS authors for releasing their implementation, as well as the Mip-NeRF 360 dataset.</p>
+  <p>This work was conducted at <strong>Huawei Canada</strong>. The website template is inspired by the NeRF/3DGS project page conventions from the community.</p>
+</section>
+
+<footer>
+  <p>© 2026 Jingxiang Chen, Mohamed Ibrahim, Yang Liu — Huawei Canada.<br/>
+  Code on <a href="https://github.com/harry7557558/vksplat" target="_blank">GitHub</a>. Website hosted by GitHub Pages.</p>
+</footer>
+
+<script>
+  function copyBibtex(btn) {
+    const el = document.getElementById('bibtex-content');
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  // Animate bars on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.bar-fill').forEach(b => {
+          const w = b.style.width;
+          b.style.width = '0';
+          requestAnimationFrame(() => {
+            setTimeout(() => b.style.width = w, 50);
+          });
+        });
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.timing-bars').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

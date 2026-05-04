@@ -1,5 +1,9 @@
 # VkSplat
 
+[![Website](https://img.shields.io/website?url=https://harry7557558.github.io/vksplat/&logo=github)](https://harry7557558.github.io/vksplat/)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.00219-b31b1b.svg)](https://arxiv.org/abs/2605.00219)
+![License](https://img.shields.io/github/license/harry7557558/vksplat)
+
 This project provides functionality for training 3D Gaussian Splatting (3DGS) models, using Vulkan compute backend with Python binding.
 
 This is code for paper "VkSplat: High-Performance 3DGS Training in Vulkan Compute".
@@ -26,6 +30,7 @@ Features:
 - Windows 10/11, Ubuntu 22.04/24.04/25.04
 - NVIDIA RTX 3090, NVIDIA RTX 4080 Super, NVIDIA RTX 5070 Laptop, AMD Radeon RX 7800 XT, Intel® UHD Graphics 750, Intel® UHD Graphics 770
 
+We also received feedback from users who successfully ran VkSplat on Mac devices using MoltenVK.
 
 ## Installation
 
@@ -136,3 +141,22 @@ make -j
 ```
 
 If you add new source files, you must add them to the list of sources in `setup.py` and `CMakeLists.txt` before running the recompilation commands.
+
+
+
+## Citation
+
+If you find this work useful for your research, please consider citing:
+
+```bibtex
+@inproceedings{chen2026vksplat,
+  booktitle = {Eurographics 2026 - Short Papers},
+  title     = {{VkSplat: High-Performance 3DGS Training in Vulkan Compute}},
+  author    = {Chen, Jingxiang and Ibrahim, Mohamed and Liu, Yang},
+  year      = {2026},
+  publisher = {The Eurographics Association},
+  ISSN      = {2309-5059},
+  ISBN      = {978-3-03868-299-8},
+  DOI       = {10.2312/egs.20261024}
+}
+```

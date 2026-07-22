@@ -4,6 +4,8 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2605.00219-b31b1b.svg)](https://arxiv.org/abs/2605.00219)
 ![License](https://img.shields.io/github/license/harry7557558/vksplat)
 
+> Note: This is an academic work intended to reproduces GSplat metrics with performance optimization. Check out [Spirulae-Splat](https://github.com/harry7557558/spirulae-splat) for a Vulkan 3DGS trainer more oriented toward practical use.
+
 This project provides functionality for training 3D Gaussian Splatting (3DGS) models, using Vulkan compute backend with Python binding.
 
 This is code for paper "VkSplat: High-Performance 3DGS Training in Vulkan Compute".

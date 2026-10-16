@@ -667,7 +667,7 @@ void VulkanGSTrainer::executeComputeSSIMGradient(
     }, COMPUTE_SHADER_READ);
     executeCompute(
         {{w, 16}, {h, 16}},
-        shader_uniforms, 3*sizeof(Uniform32_t),
+        shader_uniforms, 4*sizeof(Uniform32_t),
         pipeline_ssim_backward,
         {
             buffers.pixel_state.deviceBuffer,

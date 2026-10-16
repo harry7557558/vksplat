@@ -275,7 +275,10 @@ void VulkanGSPipeline::selectPhysicalDevice(int device_id) {
         for (uint32_t i = 0; i < queue_families.size(); i++) {
             if ((queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) &&
                 (queue_families[i].timestampValidBits != 0)
-            ) queueFamilyIdx = i;
+            ) {
+                queueFamilyIdx = i;
+                break;
+            }
         }
         bool validQueueFamily = ((int32_t)queueFamilyIdx != -1);
 
